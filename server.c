@@ -263,13 +263,14 @@ int openDatabase()
     int rc = sqlite3_open("airport.db", &airportDB);
     if (rc)
     {
-        fprintf(stderr, "\nCan't open database: %s\n\n", sqlite3_errmsg(airportDB));
-        return 0;
+        fprintf(stderr, "\nCan't open database: %s\n", sqlite3_errmsg(airportDB));
+        return -1;
     }
     else
     {
         fprintf(stderr, "\nOpened database successfully\n");
     }
+    return 0;
 }
 
 int closeDatabase()
