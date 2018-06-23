@@ -246,13 +246,17 @@ int main(int argc, char **argv)
         }
     }
 
-    switch (command)
-    {
-        case "create flight": createFlight(seat, nameFlight); break;
-        case "cancel flight": cancelFlight(nameFlight); break;
-        case "book": reserveSeat(seat, nameFlight); break;
-        case "cancel seat": cancelSeat(seat, flightName); break;
-        default: printf("Wrong command\n"); return -1;
+    if (strcmp(command,"create flight") == 0){
+        createFlight(seat, nameFlight);
+    } else if (strcmp(command,"cancel flight") == 0){
+        cancelFlight(nameFlight);
+    } else if (strcmp(command,"book") == 0){
+        reserveSeat(seat, nameFlight);
+    } else if (strcmp(command,"cancel seat") == 0){
+        cancelSeat(seat, flightName);
+    } else {
+        printf("Wrong command\n");
+        return -1;
     }
     return 0;
 }
