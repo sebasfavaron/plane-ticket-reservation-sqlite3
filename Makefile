@@ -1,17 +1,15 @@
 all: clean comp run
 comp: 
-	make all
-	#cd Database; make all
+	cd Database; make all
 	#cd Utils; make all
-	#cd Server; make all
-	#cd Client; make all
+	cd Server; make all
+	cd Client; make all
 
 clean:
-	make clean
-	#cd Client; make clean
-	#cd Server; make clean
+	cd Client; make clean
+	cd Server; make clean
 	#cd Utils; make clean
-	#cd Database; make clean
+	cd Database; make clean
 	#cd Test; make clean
 
 run: 

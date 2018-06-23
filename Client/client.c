@@ -1,13 +1,17 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
+#include <client.h>
 
-#define IP "127.0.0.1"
-#define PUERTO 6667
-#define PACKAGESIZE 1024
+int sendMessage(){
+	int enviar = 1;
+	char message[PACKAGESIZE];
+
+	printf("Conectado al servidor. Bienvenido al sistema, ya puede enviar mensajes. Escriba 'exit' para salir\n");
+
+	while(enviar){
+		fgets(message, PACKAGESIZE, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
+		if (!strcmp(message,"exit\n")) enviar = 0;			// Chequeo que el usuario no quiera salir
+		if (enviar) send(fd, message, strlen(message) + 1, 0); 	// Solo envio si el usuario no quiere salir.
+	}
+}
 
 int main(void)
 {
@@ -16,8 +20,8 @@ int main(void)
 	int fd, numbytes,puerto;
 	char buf[100];
 
-	puerto=PUERTO;
-	ip=IP;
+	puerto = PUERTO;
+	ip = IP;
  	
 	struct hostent *he;
 	/* estructura que recibira informacion sobre el nodo remoto */
@@ -60,16 +64,3 @@ int main(void)
  	return 0;
 }
 
-int sendMessage(){
-	int enviar = 1;
-	char message[PACKAGESIZE];
-
-	printf("Conectado al servidor. Bienvenido al sistema, ya puede enviar mensajes. Escriba 'exit' para salir\n");
-
-	while(enviar){
-		fgets(message, PACKAGESIZE, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
-		if (!strcmp(message,"exit\n")) enviar = 0;			// Chequeo que el usuario no quiera salir
-		if (enviar) send(fd, message, strlen(message) + 1, 0); 	// Solo envio si el usuario no quiere salir.
-	}
-
-}

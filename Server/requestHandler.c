@@ -1,15 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sqlite3.h>
-#include <netinet/in.h>
-
-char *TABLENAME = "flights";
+#include <requestHandler.h>
 
 static int tableExists(void *boolean, int columnCount, char **data, char **columns)
 {
