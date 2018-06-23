@@ -1,4 +1,16 @@
-#include <requestHandler.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sqlite3.h>
+#include <netinet/in.h>
+#include "requestHandler.h"
+
+sqlite3 *airportDB;
 
 static int tableExists(void *boolean, int columnCount, char **data, char **columns)
 {
@@ -218,16 +230,11 @@ int stringToInt(char *string)
     return result;
 }
 
-void closeDatabase()
-{
-    sqlite3_close(airportDB);
-    printf("Closed database\n");
-}
-
 int main(int argc, char **argv)
 {
     char *command, *nameFlight;
     int seat;
+    airportDB = 
 
     if(argc < 2) {
         printf("Wrong amount of arguments\n");

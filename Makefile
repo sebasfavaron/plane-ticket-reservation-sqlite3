@@ -1,4 +1,4 @@
 default:
-	gcc server.c -pthread -l sqlite3
-	gcc requestHandler.c -pthread -l sqlite3
-	gcc client.c -pthread -l sqlite3
+	gcc -pthread -l sqlite3 -o client client.c
+	#gcc -pthread -l sqlite3 -o requestHandler requestHandler.c
+	gcc -pthread -l sqlite3 -o server server.c
