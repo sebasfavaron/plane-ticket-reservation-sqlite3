@@ -81,9 +81,10 @@ int main(int argc, char **argv)
 
         // Aca el servidor envia el mensaje que queramos.
         //El 2do parametro es el mensaje y el 3ro la longitud.
+        char *command, *nameFlight, *seat;
         if (fork() == 0)
         {
-            execl("./requestHandler", "./requestHandler", (char *)NULL);
+            execl("./requestHandler", "./requestHandler", command, nameFlight, seat, (char *)NULL);
         }
         send(fd2, "Bienvenido a mi servidor.\n", 26, 0);
         close(fd2); /* cierra fd2 */

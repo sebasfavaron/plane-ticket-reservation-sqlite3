@@ -132,7 +132,7 @@ static int seatTaken(void *boolean, int columnCount, char **data, char **columns
     return 0;
 }
 
-int reserveSeat(char *flightName, int seatNumber)
+int reserveSeat(int seatNumber, char *flightName)
 {
     int rc, isTaken = 0;
     char takenQuery[100];
@@ -168,7 +168,7 @@ int reserveSeat(char *flightName, int seatNumber)
     }
 }
 
-int cancelSeat(char *flightName, int seatNumber)
+int cancelSeat(int seatNumber, char *flightName)
 {
     int rc, isTaken = 1;
     char cancelQuery[100];
@@ -204,12 +204,55 @@ int cancelSeat(char *flightName, int seatNumber)
     }
 }
 
+int stringToInt(char *string)
+{
+    int i, len, result = 0;
+
+    len = strlen(string);
+    for (i = 0; i < len; i++)
+    {
+        if(string[i] < '0' || string[i] > '9') return -1;
+        result = result * 10 + (string[i] - '0');
+    }
+
+    return result;
+}
+
 void closeDatabase()
 {
     sqlite3_close(airportDB);
     printf("Closed database\n");
 }
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
+    char *command, *nameFlight;
+    int seat;
+
+    if(argc < 2) {
+        printf("Wrong amount of arguments\n");
+        return -1;
+    }
+
+    command = argv[1];
+    nameFlight = argv[2];
     
+    if(argc > 2) {
+        seat = stringToInt(argv[3]);
+
+        if(seat == -1 && strcmp(command, "cancel flight") != 0) {
+            printf("Wrong number format on seat\n");
+            return -1;
+        }
+    }
+
+    switch (command)
+    {
+        case "create flight": createFlight(seat, nameFlight); break;
+        case "cancel flight": cancelFlight(nameFlight); break;
+        case "book": reserveSeat(seat, nameFlight); break;
+        case "cancel seat": cancelSeat(seat, flightName); break;
+        default: printf("Wrong command\n"); return -1;
+    }
+    return 0;
 }
