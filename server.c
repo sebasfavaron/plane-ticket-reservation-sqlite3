@@ -33,7 +33,7 @@ int createFlight(int seatAmount, char *flightName)
     char existsSQL[100];
 
     snprintf(existsSQL, sizeof(existsSQL), "select count(flightName) from %s where flightName=\"%s\"", TABLENAME, flightName);
-    rc = sqlite3_exec(airportDB, existsSQL, tableExists, (void *)&alreadyExists, NULL);
+    rc = sqlite3_exec(airportDB, existsSQL, tableExists, (void *)&alreadyExists, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
@@ -69,7 +69,7 @@ int cancelFlight(char *flightName)
     char *errorMessage;
 
     snprintf(deleteSQL, sizeof(deleteSQL), "delete from %s where flightName=\"%s\"", TABLENAME, flightName);
-    rc = sqlite3_exec(airportDB, deleteSQL, NULL, NULL, NULL);
+    rc = sqlite3_exec(airportDB, deleteSQL, NULL, NULL, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL delete error: %s\n\n", errorMessage);
@@ -97,32 +97,39 @@ static int printSeat(void *seats, int columnCount, char **data, char **columns)
 
 char *makeFlightString(char *seats){
     int planeWidth = 10, seatsSize = sizeof(seats);
-    char *flight = malloc(seatsSize*2 + (int)(seatsSize/10*12));
+    char *flight = malloc(seatsSize*2 + (int)(seatsSize/10*15));
+    strcpy(flight,"0  | ");
     for(int i=0; i<seatsSize; i++){
-
+        sprintf(flight + strlen(flight), "&c ", seats[i]);
+        /* char seat[2];
+        sprintf(seat, "&c ", seats[i]);
+        strcat(flight, seat); */
+        if(i % planeWidth == 0) {
+            sprintf(flight + strlen(flight), "|  %d\n%d  | ", i, i+1);
+            /* char extra[10];
+            strcpy(extra, "|  %d\n%d  |", i, i+1);
+            strcat(flight, extra); */
+        }
     }
     return flight;
 }
 
-int showFlight(char *flightName)
+char *showFlight(char *flightName)
 {
     int rc;
     char printSQL[100], *errorMessage, *seats;
     seats = (char *) malloc(10 * sizeof(char));
-    printf("\nFlight %s:\n0  | ");
-
     snprintf(printSQL, sizeof(printSQL), "select from %s where flightName=\"%s\"", TABLENAME, flightName);
-    rc = sqlite3_exec(airportDB, printSQL, printSeat, (void *)&seats, NULL);
+    rc = sqlite3_exec(airportDB, printSQL, printSeat, (void *)&seats, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "Flight print error: %s\n\n", errorMessage);
         sqlite3_free(errorMessage);
-        return -1;
+        return NULL;
     }
     else
     {
-        printf("%s\n\n", makeFlightString(seats));
-        return 0;
+        return makeFlightString(seats);
     }
 }
 
@@ -134,7 +141,7 @@ int clearTable()
     char *errorMessage;
 
     snprintf(deleteSQL, sizeof(deleteSQL), "delete from %s", TABLENAME);
-    rc = sqlite3_exec(airportDB, deleteSQL, NULL, NULL, NULL);
+    rc = sqlite3_exec(airportDB, deleteSQL, NULL, NULL, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL delete error: %s\n\n", errorMessage);
@@ -156,7 +163,7 @@ int customQuery()
     char *errorMessage;
 
     scanf("%s", customSQL);
-    rc = sqlite3_exec(airportDB, customSQL, NULL, NULL, NULL);
+    rc = sqlite3_exec(airportDB, customSQL, NULL, NULL, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL custom query error: %s\n\n", errorMessage);
@@ -189,7 +196,7 @@ int reserveSeat(int seatNumber, char *flightName, char *client)
     char *errorMessage;
 
     snprintf(takenQuery, sizeof(takenQuery), "select isTaken from %s where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
-    rc = sqlite3_exec(airportDB, takenQuery, seatTaken, (void *)&isTaken, NULL);
+    rc = sqlite3_exec(airportDB, takenQuery, seatTaken, (void *)&isTaken, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
@@ -204,7 +211,7 @@ int reserveSeat(int seatNumber, char *flightName, char *client)
 
     char query[256];
     snprintf(query, sizeof(query), "update %s set isTaken=1 where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
-    rc = sqlite3_exec(airportDB, query, NULL, NULL, NULL);
+    rc = sqlite3_exec(airportDB, query, NULL, NULL, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
@@ -212,7 +219,7 @@ int reserveSeat(int seatNumber, char *flightName, char *client)
         return -1;
     }
     snprintf(query, sizeof(query), "update %s set clientName=%s where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, client, flightName, seatNumber);
-    rc = sqlite3_exec(airportDB, query, NULL, NULL, NULL);
+    rc = sqlite3_exec(airportDB, query, NULL, NULL, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
@@ -242,7 +249,7 @@ int cancelSeat(int seatNumber, char *flightName, char *client)
     char *errorMessage;
 
     snprintf(cancelQuery, sizeof(cancelQuery), "select isTaken from %s where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
-    rc = sqlite3_exec(airportDB, cancelQuery, seatTaken, (void *)&isTaken, NULL);
+    rc = sqlite3_exec(airportDB, cancelQuery, seatTaken, (void *)&isTaken, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
@@ -257,7 +264,7 @@ int cancelSeat(int seatNumber, char *flightName, char *client)
 
     char query[256];
     snprintf(query, sizeof(query), "update %s set isTaken=0 where flightName=\"%s\" and seatNumber=\"%d\" and clientName=\"%s\"", TABLENAME, flightName, seatNumber, client);
-    rc = sqlite3_exec(airportDB, query, executionCounter, (void *)&i, NULL);
+    rc = sqlite3_exec(airportDB, query, executionCounter, (void *)&i, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
@@ -348,8 +355,8 @@ int requestHandler(char *command, char *nameFlight, int seat, char *client)
 {
     if (strcmp(command, "create flight") == 0)
     {
+        printf("%s", showFlight("AA323"));
         createFlight(seat, nameFlight);
-        showFlight(nameFlight);
     }
     else if (strcmp(command, "cancel flight") == 0)
     {
@@ -357,20 +364,21 @@ int requestHandler(char *command, char *nameFlight, int seat, char *client)
     }
     else if (strcmp(command, "book") == 0)
     {
-        showFlight(nameFlight);
+        char *msgToClient = showFlight(nameFlight);
 
-        //aca hay que averiguar el seat que quiere
+        //aca hay que mandarle msgToClient y averiguar el seat que quiere
 
         reserveSeat(seat, nameFlight, client);
     }
     else if (strcmp(command, "cancel seat") == 0)
     {
-        showFlight(nameFlight);
+        char *msgToClient = showFlight(nameFlight);
 
-        //aca hay que averiguar el seat que quiere
+        //aca hay que mandarle msgToClient y averiguar el seat que quiere
 
         cancelSeat(seat, nameFlight, client);
     }
+    printf("end of requestHandler");
     return 0;
 }
 
@@ -415,7 +423,7 @@ int main(int argc, char **argv)
 
     //Crea tabla flights si no existe
     char createFlights[256] = "create table if not exists flights (flightName string, seatNumber int, isTaken int, clientName string, primary key (flightName,seatNumber))";
-    rc = sqlite3_exec(airportDB, createFlights, NULL, NULL, NULL);
+    rc = sqlite3_exec(airportDB, createFlights, NULL, NULL, &errorMessage);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error initializing/creating table \"flights\": %s\n", errorMessage);
