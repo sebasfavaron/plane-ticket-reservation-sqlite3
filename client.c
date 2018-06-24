@@ -14,13 +14,6 @@ int sendMessage(int fd)
 	int enviar = 1;
 	char message[PACKAGESIZE];
 
-	printf("Conectado al servidor. Bienvenido al sistema, ya puede enviar mensajes. Escriba 'exit' para salir\n");
-	printf("Comandos:\n");
-	printf("create flight + Nombre del vuelo + Cantidad de lugares\n");
-	printf("cancel flight + Nombre del vuelo\n");
-	printf("book + Nombre del vuelo + Numero de asiento\n");
-	printf("cancel seat + Nombre del vuelo + Numero de asiento\n");
-
 	while (enviar)
 	{
 		fgets(message, PACKAGESIZE, stdin); // Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
@@ -73,6 +66,17 @@ int main(void)
 		exit(-1);
 	}
 
+	printf("Conectado al servidor. Bienvenido al sistema, ya puede enviar mensajes. Escriba 'exit' para salir\n\n");
+	printf("Comandos:\n\n");
+	printf("Para dar de alta un vuelo\n");
+	printf("create flight + Nombre del vuelo + Cantidad de lugares\n\n");
+	printf("Para dar de baja un vuelo\n");
+	printf("cancel flight + Nombre del vuelo\n");
+	printf("Para reservar su asiento\n");
+	printf("book + Nombre del vuelo + Numero de asiento\n\n");
+	printf("Para cencelar su reserva\n");
+	printf("cancel seat + Nombre del vuelo + Numero de asiento\n\n");
+
 	sendMessage(fd);
 
 	if ((numbytes = recv(fd, buf, 100, 0)) == -1)
@@ -83,6 +87,12 @@ int main(void)
 
 	buf[numbytes] = '\0';
 	//ahi se guarda algo que nos haya mandado el servidor (en formato string)
+	if(strcmp(buf,"salir")==0){
+ 	break;
+ 	}else{
+ 	printf("Servidor: %s\n",buf);
+ 	sendmessage(fd);
+ 	}
 
 	close(fd);
 	return 0;

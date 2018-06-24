@@ -351,7 +351,7 @@ int parseMessage(char *buf, char **command, char **nameFlight, int *seat, char *
     return 0;
 }
 
-int requestHandler(char *command, char *nameFlight, int seat, char *client)
+int requestHandler(char *command, char *nameFlight, int seat, char *client, int fd2)
 {
     if (strcmp(command, "create flight") == 0)
     {
@@ -366,6 +366,9 @@ int requestHandler(char *command, char *nameFlight, int seat, char *client)
     {
         char *msgToClient = showFlight(nameFlight);
 
+        // Aca el servidor envia el mensaje que queramos.
+        //El 2do parametro es el mensaje y el 3ro la longitud.
+        send(fd2, msgToClient, strlen(msgToClient)+1, 0);
         //aca hay que mandarle msgToClient y averiguar el seat que quiere
 
         reserveSeat(seat, nameFlight, client);
@@ -435,14 +438,14 @@ int main(int argc, char **argv)
         printf("Table \"flights\" correctly initialized/created\n\n");
     }
 
-    puerto = PUERTO;
+    // puerto = PUERTO;
 
     struct sockaddr_in server;
     struct sockaddr_in client;
 
     //Configuracion del servidor
     server.sin_family = AF_INET;         //Familia TCP/IP
-    server.sin_port = htons(puerto);     //Puerto
+    server.sin_port = htons(PUERTO);     //Puerto
     server.sin_addr.s_addr = INADDR_ANY; //Cualquier cliente puede conectarse
     bzero(&(server.sin_zero), 8);        //Funcion que rellena con 0's
 
@@ -478,8 +481,7 @@ int main(int argc, char **argv)
         //aca recibe un mensaje
         char buf[1024]; //Para recibir mensaje
         recv(fd2, buf, 1024, 0);
-        // Aca el servidor envia el mensaje que queramos.
-        //El 2do parametro es el mensaje y el 3ro la longitud.
+
         char *command, *nameFlight, *client;
         int seat = 0;
         command = (char *)malloc(50 * sizeof(char));
@@ -492,11 +494,11 @@ int main(int argc, char **argv)
             if (seat < 0 || rc != 0)
                 return -1;
 
-            requestHandler(command, nameFlight, seat, client);
+            requestHandler(command, nameFlight, seat, client, fd2);
 
-            return 0;
+            // return 0;
         }
-        send(fd2, "Bienvenido a mi servidor.\n", 26, 0);
+
         close(fd2); /* cierra fd2 */
     }
 
