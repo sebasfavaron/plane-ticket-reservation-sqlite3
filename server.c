@@ -223,6 +223,7 @@ int stringToInt(char *string)
     len = strlen(string);
     for (i = 0; i < len; i++)
     {
+        if (string[i] == '\n') break;
         if (string[i] < '0' || string[i] > '9')
             return -1;
         result = result * 10 + (string[i] - '0');
@@ -231,9 +232,58 @@ int stringToInt(char *string)
     return result;
 }
 
+int parseMessage(char *buf, char **command, char **nameFlight, int *seat)
+{
+    int i = 0;
+    printf("message: %s\n", buf);
+    printf("(%.13s)\n", buf);
+    //1er if: command reste 1, 
+    if (strncmp(buf, "create flight", 13) == 0)
+    {
+        strcpy(*command, "create flight");
+        i += 14;
+        int nameLength = strstr(buf + i, " ") - (buf + i);
+        strncpy(*nameFlight, buf + i, nameLength);
+        i += nameLength + 1;
+        printf("seat: (%s)\n",buf + i);
+        *seat = stringToInt(buf + i);
+        printf("com: |%s|, name: |%s|, seat: |%d|\n", *command, *nameFlight, *seat);
+    }
+    else if (strncmp(buf, "cancel flight", 13) == 0)
+    {
+        strcpy(*command, "cancel flight");
+        i += 14;
+        strcpy(*nameFlight, buf + i);
+        (*nameFlight)[strlen(*nameFlight)-1] = 0;
+    }
+    else if (strncmp(buf, "book", 4) == 0)
+    {
+        strcpy(*command, "book");
+        i += 5;
+        int nameLength = strstr(buf + i, " ") - (buf + i);
+        strncpy(*nameFlight, buf + i, nameLength);
+        i += nameLength + 1;
+        *seat = stringToInt(buf + i);
+    }
+    else if (strncmp(buf, "cancel seat", 11) == 0)
+    {
+        strcpy(*command, "cancel seat");
+        i += 12;
+        int nameLength = strstr(buf + i, " ") - (buf + i);
+        strncpy(*nameFlight, buf + i, nameLength);
+        i += nameLength + 1;
+        *seat = stringToInt(buf + i);
+    }
+    else
+    {
+        printf("Wrong command\n");
+        return -1;
+    }
+    return 0;
+}
+
 int requestHandler(char *command, char *nameFlight, int seat)
 {
-
     if (strcmp(command, "create flight") == 0)
     {
         createFlight(seat, nameFlight);
@@ -249,11 +299,6 @@ int requestHandler(char *command, char *nameFlight, int seat)
     else if (strcmp(command, "cancel seat") == 0)
     {
         cancelSeat(seat, nameFlight);
-    }
-    else
-    {
-        printf("Wrong command\n");
-        return -1;
     }
     return 0;
 }
@@ -354,69 +399,34 @@ int main(int argc, char **argv)
         //aca recibe un mensaje
         char buf[1024]; //Para recibir mensaje
         recv(fd2, buf, 1024, 0);
-
         // Aca el servidor envia el mensaje que queramos.
         //El 2do parametro es el mensaje y el 3ro la longitud.
-        int i = 0;
-        char command[50], nameFlight[50];
+        char *command, *nameFlight;
         int seat = 0;
-
-        if (strncmp(buf, "create flight", 14) == 0)
-        {
-            strncpy(command, buf, 14);
-            i += 14;
-            int nameLength = strstr(buf + i, " ") - (buf + i);
-            strncpy(nameFlight, buf + i, nameLength);
-            i += nameLength + 1;
-            seat = stringToInt(buf + i);
-        }
-        else if (strncmp(buf, "cancel flight", 14) == 0)
-        {
-            strncpy(command, buf, 14);
-            i += 14;
-            strcpy(nameFlight, buf + i);
-        }
-        else if (strncmp(buf, "book", 5) == 0)
-        {
-            strncpy(command, buf, 5);
-            i += 5;
-            int nameLength = strstr(buf + i, " ") - (buf + i);
-            strncpy(nameFlight, buf + i, nameLength);
-            i += nameLength + 1;
-            seat = stringToInt(buf + i);
-        }
-        else if (strncmp(buf, "cancel seat", 12) == 0)
-        {
-            strncpy(command, buf, 12);
-            i += 12;
-            int nameLength = strstr(buf + i, " ") - (buf + i);
-            strncpy(nameFlight, buf + i, nameLength);
-            i += nameLength + 1;
-            seat = stringToInt(buf + i);
-        }
-        else
-        {
-            printf("Wrong command\n");
-            return -1;
-        }
-
-        printf("com: |%s|, name: |%s|, seat: |%d|\n", command, nameFlight, seat);
-
-        if (seat < 0)
-            return -1;
+        command = (char*) malloc(50 * sizeof(char));
+        nameFlight = (char*) malloc(50 * sizeof(char));
 
         if (fork() == 0)
         {
-            return requestHandler(command, nameFlight, seat);
+            rc = parseMessage(buf, &command, &nameFlight, &seat);
+
+            printf("com: |%s|, name: |%s|, seat: |%d|\n", command, nameFlight, seat);
+
+            if (seat < 0 || rc != 0)
+                return -1;
+
+            int result = -1;
+            while (result != 0)
+            {
+                result = requestHandler(command, nameFlight, seat);
+            }
+            return 0;
         }
         send(fd2, "Bienvenido a mi servidor.\n", 26, 0);
         close(fd2); /* cierra fd2 */
     }
 
     close(fd);
-
-    //aca atiende a los clientes con forks y threads. Muchas funciones de sql creadas aca
-    //van a tener que moverse a un requestHandler.c a donde mandemos a cada cliente
 
     if (closeDatabase() != 0)
         return -1;
