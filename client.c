@@ -19,8 +19,11 @@ int sendMessage(int fd)
 		fgets(message, PACKAGESIZE, stdin); // Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
 		if (!strcmp(message, "exit\n"))
 			enviar = 0; // Chequeo que el usuario no quiera salir
-		if (enviar)
+		if (enviar){
 			send(fd, message, strlen(message) + 1, 0); // Solo envio si el usuario no quiere salir.
+		}else{
+			exit(0);
+		}
 	}
 	return 0;
 }
@@ -87,12 +90,9 @@ int main(void)
 
 	buf[numbytes] = '\0';
 	//ahi se guarda algo que nos haya mandado el servidor (en formato string)
-	if(strcmp(buf,"salir")==0){
- 	break;
- 	}else{
+
  	printf("Servidor: %s\n",buf);
- 	sendmessage(fd);
- 	}
+ 	sendMessage(fd);
 
 	close(fd);
 	return 0;
