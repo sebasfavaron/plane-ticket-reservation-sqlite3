@@ -455,9 +455,18 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
+    int yes=1;
+
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) 
+    {
+    perror("setsockopt");
+    exit(1);
+    }
+
     if (bind(fd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
     {
         printf("error en bind() \n");
+        close(fd);
         exit(-1);
     }
 
