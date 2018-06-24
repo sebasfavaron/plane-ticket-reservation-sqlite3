@@ -5,6 +5,6 @@
 #define PUERTO 6667
 #define PACKAGESIZE 1024
 
-int sendMessage();
+int sendMessage(int fd);
 
 #endif

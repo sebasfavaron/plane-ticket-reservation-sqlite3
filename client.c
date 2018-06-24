@@ -33,14 +33,16 @@ int main(void)
 	int fd, numbytes, puerto;
 	char buf[100];
 
-	puerto = PUERTO;
-	ip = IP;
+	// puerto = PUERTO;
+	// ip = IP;
 
 	struct hostent *he;
 	/* estructura que recibira informacion sobre el nodo remoto */
 	struct sockaddr_in server;
 
-	if ((he = gethostbyname(ip)) == NULL)
+	system("clear");
+
+	if ((he = gethostbyname(IP)) == NULL)
 	{
 		printf("gethostbyname() error\n");
 		exit(-1);
@@ -55,8 +57,8 @@ int main(void)
 
 	//Datos del servidor
 	server.sin_family = AF_INET;
-	server.sin_port = htons(puerto);
-	server.sin_addr = *((struct in_addr *)he->h_addr);
+	server.sin_port = htons(PUERTO);
+	server.sin_addr.s_addr=inet_addr(IP);
 	bzero(&(server.sin_zero), 8);
 
 	if (connect(fd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
