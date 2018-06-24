@@ -7,9 +7,10 @@ int createFlight(int seatAmount, char *flightName);
 int cancelFlight(char *flightName);
 int clearTable();
 int customQuery();
+static int executionCounter(void *i, int columnCount, char **data, char **columns);
 static int seatTaken(void *boolean, int columnCount, char **data, char **columns);
-int reserveSeat(int seatNumber, char *flightName);
-int cancelSeat(int seatNumber, char *flightName);
+int reserveSeat(int seatNumber, char *flightName, char *client);
+int cancelSeat(int seatNumber, char *flightName, char *client);
 
 #define TABLENAME "flights"
 #define PUERTO 6667

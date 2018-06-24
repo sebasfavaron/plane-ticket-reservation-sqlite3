@@ -49,7 +49,7 @@ int createFlight(int seatAmount, char *flightName)
     for (int currSeat = 0; currSeat < seatAmount; currSeat++)
     {
         char sql[100];
-        snprintf(sql, sizeof(sql), "insert into %s values(\"%s\",%d,%d)", TABLENAME, flightName, currSeat + 1, isTaken);
+        snprintf(sql, sizeof(sql), "insert into %s values(\"%s\",%d,%d,\"%s\")", TABLENAME, flightName, currSeat + 1, isTaken, "NULL");
         //printf("Command: %s\n",sql);
         rc = sqlite3_exec(airportDB, sql, NULL, 0, &errorMessage);
         if (rc != SQLITE_OK)
@@ -57,11 +57,8 @@ int createFlight(int seatAmount, char *flightName)
             fprintf(stderr, "SQL insert error: %s\n\n", errorMessage);
             sqlite3_free(errorMessage);
         }
-        else
-        {
-            printf("Value %i inserted correctly into table %s, in flight %s\n", currSeat, TABLENAME, flightName);
-        }
     }
+    printf("Flight %s created in table %s with %d seats\n", flightName, TABLENAME, seatAmount);
     return 0;
 }
 
@@ -82,6 +79,49 @@ int cancelFlight(char *flightName)
     else
     {
         printf("Flight %s deleted correctly\n\n", flightName);
+        return 0;
+    }
+}
+
+static int printSeat(void *seats, int columnCount, char **data, char **columns)
+{
+    char **seatsString = (char **)seats;
+    char *isTaken = data[2];
+    
+    if(sizeof(*seatsString) % 10 == 0)
+        *seatsString = realloc(*seatsString, sizeof(*seatsString) + 10);
+    strcat(*seatsString, isTaken);
+
+    return 0;
+}
+
+char *makeFlightString(char *seats){
+    int planeWidth = 10, seatsSize = sizeof(seats);
+    char *flight = malloc(seatsSize*2 + (int)(seatsSize/10*12));
+    for(int i=0; i<seatsSize; i++){
+
+    }
+    return flight;
+}
+
+int showFlight(char *flightName)
+{
+    int rc;
+    char printSQL[100], *errorMessage, *seats;
+    seats = (char *) malloc(10 * sizeof(char));
+    printf("\nFlight %s:\n0  | ");
+
+    snprintf(printSQL, sizeof(printSQL), "select from %s where flightName=\"%s\"", TABLENAME, flightName);
+    rc = sqlite3_exec(airportDB, printSQL, printSeat, (void *)&seats, NULL);
+    if (rc != SQLITE_OK)
+    {
+        fprintf(stderr, "Flight print error: %s\n\n", errorMessage);
+        sqlite3_free(errorMessage);
+        return -1;
+    }
+    else
+    {
+        printf("%s\n\n", makeFlightString(seats));
         return 0;
     }
 }
@@ -133,21 +173,19 @@ int customQuery()
 static int seatTaken(void *boolean, int columnCount, char **data, char **columns)
 {
     int *taken = boolean;
-    //printf("seatTaken\nBoolean before: %c\n",*taken);
-    for (int i = 0; i < columnCount; i++)
-    {
-        printf("%s = %s\n", columns[i], data[i]);
-    }
-    if (strcmp(data[0], "0"))
+
+    if (strcmp(data[0], "0") == 0)
+        *taken = 0;
+    else
         *taken = 1;
-    //printf("Count result: %s\nBoolean after: %d\n\n",data[0],*taken);
+
     return 0;
 }
 
-int reserveSeat(int seatNumber, char *flightName)
+int reserveSeat(int seatNumber, char *flightName, char *client)
 {
-    int rc, isTaken = 0;
-    char takenQuery[100];
+    int rc, isTaken = 1;
+    char takenQuery[256];
     char *errorMessage;
 
     snprintf(takenQuery, sizeof(takenQuery), "select isTaken from %s where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
@@ -160,12 +198,20 @@ int reserveSeat(int seatNumber, char *flightName)
     }
     if (isTaken)
     {
-        printf("Seat %d in flight %s already taken\n\n", seatNumber, flightName);
+        printf("Seat %d in flight %s already taken or does not exist\n\n", seatNumber, flightName);
         return -1;
     }
 
-    char query[100];
+    char query[256];
     snprintf(query, sizeof(query), "update %s set isTaken=1 where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
+    rc = sqlite3_exec(airportDB, query, NULL, NULL, NULL);
+    if (rc != SQLITE_OK)
+    {
+        fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
+        sqlite3_free(errorMessage);
+        return -1;
+    }
+    snprintf(query, sizeof(query), "update %s set clientName=%s where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, client, flightName, seatNumber);
     rc = sqlite3_exec(airportDB, query, NULL, NULL, NULL);
     if (rc != SQLITE_OK)
     {
@@ -180,10 +226,19 @@ int reserveSeat(int seatNumber, char *flightName)
     }
 }
 
-int cancelSeat(int seatNumber, char *flightName)
+static int executionCounter(void *i, int columnCount, char **data, char **columns)
 {
-    int rc, isTaken = 1;
-    char cancelQuery[100];
+    int *counter = i;
+
+    (*counter)++;
+
+    return 0;
+}
+
+int cancelSeat(int seatNumber, char *flightName, char *client)
+{
+    int rc, isTaken = 0, i = 0;
+    char cancelQuery[256];
     char *errorMessage;
 
     snprintf(cancelQuery, sizeof(cancelQuery), "select isTaken from %s where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
@@ -196,18 +251,22 @@ int cancelSeat(int seatNumber, char *flightName)
     }
     if (!isTaken)
     {
-        printf("Seat %d in flight %s is not taken, so it can't be canceled\n\n", seatNumber, flightName);
+        printf("Seat %d in flight %s is not taken or does not exist, so it can't be canceled\n\n", seatNumber, flightName);
         return -1;
     }
 
-    char query[100];
-    snprintf(query, sizeof(query), "update %s set isTaken=0 where flightName=\"%s\" and seatNumber=\"%d\"", TABLENAME, flightName, seatNumber);
-    rc = sqlite3_exec(airportDB, query, NULL, NULL, NULL);
+    char query[256];
+    snprintf(query, sizeof(query), "update %s set isTaken=0 where flightName=\"%s\" and seatNumber=\"%d\" and clientName=\"%s\"", TABLENAME, flightName, seatNumber, client);
+    rc = sqlite3_exec(airportDB, query, executionCounter, (void *)&i, NULL);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "SQL query error: %s\n\n", errorMessage);
         sqlite3_free(errorMessage);
         return -1;
+    }
+    else if (i == 0)
+    {
+        printf("That seat doesn't belong to you\n");
     }
     else
     {
@@ -223,7 +282,8 @@ int stringToInt(char *string)
     len = strlen(string);
     for (i = 0; i < len; i++)
     {
-        if (string[i] == '\n') break;
+        if (string[i] == '\n' || string[i] == ' ')
+            break;
         if (string[i] < '0' || string[i] > '9')
             return -1;
         result = result * 10 + (string[i] - '0');
@@ -232,12 +292,10 @@ int stringToInt(char *string)
     return result;
 }
 
-int parseMessage(char *buf, char **command, char **nameFlight, int *seat)
+int parseMessage(char *buf, char **command, char **nameFlight, int *seat, char **client)
 {
     int i = 0;
-    printf("message: %s\n", buf);
-    printf("(%.13s)\n", buf);
-    //1er if: command reste 1, 
+    //1er if: command reste 1,
     if (strncmp(buf, "create flight", 13) == 0)
     {
         strcpy(*command, "create flight");
@@ -245,16 +303,14 @@ int parseMessage(char *buf, char **command, char **nameFlight, int *seat)
         int nameLength = strstr(buf + i, " ") - (buf + i);
         strncpy(*nameFlight, buf + i, nameLength);
         i += nameLength + 1;
-        printf("seat: (%s)\n",buf + i);
         *seat = stringToInt(buf + i);
-        printf("com: |%s|, name: |%s|, seat: |%d|\n", *command, *nameFlight, *seat);
     }
     else if (strncmp(buf, "cancel flight", 13) == 0)
     {
         strcpy(*command, "cancel flight");
         i += 14;
         strcpy(*nameFlight, buf + i);
-        (*nameFlight)[strlen(*nameFlight)-1] = 0;
+        (*nameFlight)[strlen(*nameFlight) - 1] = 0;
     }
     else if (strncmp(buf, "book", 4) == 0)
     {
@@ -263,7 +319,10 @@ int parseMessage(char *buf, char **command, char **nameFlight, int *seat)
         int nameLength = strstr(buf + i, " ") - (buf + i);
         strncpy(*nameFlight, buf + i, nameLength);
         i += nameLength + 1;
-        *seat = stringToInt(buf + i);
+        /* *seat = stringToInt(buf + i);
+        i += strstr(buf + i, " ") - (buf + i); */
+        strcpy(*client, buf + i);
+        (*client)[strlen(*client) - 1] = 0;
     }
     else if (strncmp(buf, "cancel seat", 11) == 0)
     {
@@ -272,7 +331,10 @@ int parseMessage(char *buf, char **command, char **nameFlight, int *seat)
         int nameLength = strstr(buf + i, " ") - (buf + i);
         strncpy(*nameFlight, buf + i, nameLength);
         i += nameLength + 1;
-        *seat = stringToInt(buf + i);
+        /* *seat = stringToInt(buf + i);
+        i += strstr(buf + i, " ") - (buf + i); */
+        strcpy(*client, buf + i);
+        (*client)[strlen(*client) - 1] = 0;
     }
     else
     {
@@ -282,11 +344,12 @@ int parseMessage(char *buf, char **command, char **nameFlight, int *seat)
     return 0;
 }
 
-int requestHandler(char *command, char *nameFlight, int seat)
+int requestHandler(char *command, char *nameFlight, int seat, char *client)
 {
     if (strcmp(command, "create flight") == 0)
     {
         createFlight(seat, nameFlight);
+        showFlight(nameFlight);
     }
     else if (strcmp(command, "cancel flight") == 0)
     {
@@ -294,11 +357,19 @@ int requestHandler(char *command, char *nameFlight, int seat)
     }
     else if (strcmp(command, "book") == 0)
     {
-        reserveSeat(seat, nameFlight);
+        showFlight(nameFlight);
+
+        //aca hay que averiguar el seat que quiere
+
+        reserveSeat(seat, nameFlight, client);
     }
     else if (strcmp(command, "cancel seat") == 0)
     {
-        cancelSeat(seat, nameFlight);
+        showFlight(nameFlight);
+
+        //aca hay que averiguar el seat que quiere
+
+        cancelSeat(seat, nameFlight, client);
     }
     return 0;
 }
@@ -343,7 +414,7 @@ int main(int argc, char **argv)
         return -1;
 
     //Crea tabla flights si no existe
-    char createFlights[256] = "create table if not exists flights (flightName string, seatNumber int, isTaken int, primary key (flightName,seatNumber))";
+    char createFlights[256] = "create table if not exists flights (flightName string, seatNumber int, isTaken int, clientName string, primary key (flightName,seatNumber))";
     rc = sqlite3_exec(airportDB, createFlights, NULL, NULL, NULL);
     if (rc != SQLITE_OK)
     {
@@ -401,25 +472,20 @@ int main(int argc, char **argv)
         recv(fd2, buf, 1024, 0);
         // Aca el servidor envia el mensaje que queramos.
         //El 2do parametro es el mensaje y el 3ro la longitud.
-        char *command, *nameFlight;
+        char *command, *nameFlight, *client;
         int seat = 0;
-        command = (char*) malloc(50 * sizeof(char));
-        nameFlight = (char*) malloc(50 * sizeof(char));
+        command = (char *)malloc(50 * sizeof(char));
+        nameFlight = (char *)malloc(50 * sizeof(char));
 
         if (fork() == 0)
         {
-            rc = parseMessage(buf, &command, &nameFlight, &seat);
-
-            printf("com: |%s|, name: |%s|, seat: |%d|\n", command, nameFlight, seat);
+            rc = parseMessage(buf, &command, &nameFlight, &seat, &client);
 
             if (seat < 0 || rc != 0)
                 return -1;
 
-            int result = -1;
-            while (result != 0)
-            {
-                result = requestHandler(command, nameFlight, seat);
-            }
+            requestHandler(command, nameFlight, seat, client);
+
             return 0;
         }
         send(fd2, "Bienvenido a mi servidor.\n", 26, 0);
