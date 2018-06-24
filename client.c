@@ -34,7 +34,7 @@ int main(void)
 	char buf[100];
 
 	// puerto = PUERTO;
-	// ip = IP;
+	ip = IP;
 
 	struct hostent *he;
 	/* estructura que recibira informacion sobre el nodo remoto */
@@ -58,7 +58,7 @@ int main(void)
 	//Datos del servidor
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PUERTO);
-	server.sin_addr.s_addr=inet_addr(IP);
+	server.sin_addr.s_addr=inet_addr(ip);
 	bzero(&(server.sin_zero), 8);
 
 	if (connect(fd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
