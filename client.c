@@ -15,6 +15,11 @@ int sendMessage(int fd)
 	char message[PACKAGESIZE];
 
 	printf("Conectado al servidor. Bienvenido al sistema, ya puede enviar mensajes. Escriba 'exit' para salir\n");
+	printf("Comandos:\n");
+	printf("create flight + Nombre del vuelo + Cantidad de lugares\n");
+	printf("cancel flight + Nombre del vuelo\n");
+	printf("book + Nombre del vuelo + Numero de asiento\n");
+	printf("cancel seat + Nombre del vuelo + Numero de asiento\n");
 
 	while (enviar)
 	{
