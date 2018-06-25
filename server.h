@@ -12,7 +12,8 @@ static int seatTaken(void *boolean, int columnCount, char **data, char **columns
 int reserveSeat(int seatNumber, char *flightName, char *client);
 int cancelSeat(int seatNumber, char *flightName, char *client);
 
-#define TABLENAME "flights"
+#define FLIGHTTABLE "flights"
+#define CANCELEDTABLE "seatsCanceled"
 #define PUERTO 6667
 #define BACKLOG 5        // Define cuantas conexiones vamos a mantener pendientes al mismo tiempo
 #define PACKAGESIZE 1024 // Define cual va a ser el size maximo del paquete a enviar
