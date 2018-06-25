@@ -364,7 +364,9 @@ int requestHandler(char *command, char *nameFlight, int seat, char *client, int 
     }
     else if (strcmp(command, "book") == 0)
     {
-        char *msgToClient = showFlight(nameFlight);
+        // char *msgToClient = showFlight(nameFlight);
+        char *msgToClient;
+        strcpy(msgToClient,"string"); 
 
         // Aca el servidor envia el mensaje que queramos.
         //El 2do parametro es el mensaje y el 3ro la longitud.
