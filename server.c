@@ -398,7 +398,8 @@ int requestHandler(char *command, char *nameFlight, int seat, char *client, int 
 
         // Aca el servidor envia el mensaje que queramos.
         //El 2do parametro es el mensaje y el 3ro la longitud.
-        send(fd2, msgToClient, strlen(msgToClient) + 1, 0);
+        // send(fd2, msgToClient, strlen(msgToClient) + 1, 0);
+        send(fd2,"Bienvenido a mi servidor.\n",26,0);
         //aca hay que mandarle msgToClient y averiguar el seat que quiere
 
         reserveSeat(seat, nameFlight, client);
